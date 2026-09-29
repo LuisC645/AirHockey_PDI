@@ -1,0 +1,7 @@
+{
+    "R_MIN": 0,
+    "G_MIN": 138,
+    "B_MAX": 125,
+    "DIF_RG_MAX": 255,
+    "AREA_MINIMA": 1000
+}
