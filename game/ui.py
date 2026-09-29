@@ -8,17 +8,6 @@ def text_obj(text, font, color):
     return text_surface, text_surface.get_rect()
 
 
-# function to render interactive button
-
-
-def button_circle(screen, butt_color, button_pos, text, text_size, text_color,
-                  text_pos):
-    pygame.draw.circle(screen, butt_color, button_pos, buttonRadius)
-    text_surf, text_rect = text_obj(text, text_size, text_color)
-    text_rect.center = text_pos
-    screen.blit(text_surf, text_rect)
-
-
 # function to display text
 
 

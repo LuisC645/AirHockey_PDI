@@ -41,8 +41,15 @@ class Paddle:
         self.y += max(-step, min(step, target_y - self.y))
         self.angle = math.atan2(self.y - old_y, 0)
 
-    def draw(self, screen, color):
+    def draw(self, screen, color, image=None):
+        """Draws the paddle: the image (already round and sized) with a ring in `color`, or the default circles."""
         position = (int(self.x), int(self.y))
+
+        if image is not None:
+            screen.blit(image, image.get_rect(center=position))
+            if const.PADDLE_IMAGE_RING > 0:
+                pygame.draw.circle(screen, color, position, self.radius, const.PADDLE_IMAGE_RING)
+            return
 
         pygame.draw.circle(screen, color, position, self.radius, 0)
         pygame.draw.circle(screen, (0, 0, 0), position, self.radius, 2)

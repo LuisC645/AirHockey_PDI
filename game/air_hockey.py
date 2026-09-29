@@ -4,7 +4,6 @@ from .paddle import Paddle
 from .puck import Puck
 from .ui import disp_text, button_rect, draw_panel
 from .globals import *
-from .endScreen import game_end
 
 # Globals, initialized in method `init()`
 
@@ -20,7 +19,7 @@ external_control = None
 
 
 def init():
-    global paddleHit, goal_whistle, clock, screen, smallfont, roundfont
+    global paddleHit, goal_whistle, clock, screen, smallfont, boldfont, scorefont
     pygame.mixer.pre_init(44100, -16, 2, 2048)
     pygame.mixer.init()
     pygame.init()
@@ -34,57 +33,63 @@ def init():
     goal_whistle = pygame.mixer.Sound(os.path.join(auxDirectory, 'goal.wav'))
 
     smallfont = get_font(22)
-    roundfont = get_font(26, bold=True)
+    boldfont = get_font(26, bold=True)
+    scorefont = get_font(40, bold=True)
 
     clock = pygame.time.Clock()
 
 
-def score(score1, score2, player_1_name, player_2_name):
-    text1 = smallfont.render("{0} : {1}".format(player_1_name, str(score1)), True, const.BLACK)
-    text2 = smallfont.render("{0} : {1}".format(player_2_name, str(score2)), True, const.BLACK)
-
-    screen.blit(text1, [const.MARGIN, const.MARGIN - 10])
-    screen.blit(text2, [width - const.MARGIN - text2.get_width(), const.MARGIN - 10])
-
-
-def rounds(rounds_p1, rounds_p2, round_no):
-    disp_text(screen, "Round "+str(round_no), (width/2, const.MARGIN + 2), roundfont, const.BLACK)
-    disp_text(screen, str(rounds_p1) + " : " + str(rounds_p2), (width / 2, const.MARGIN + 34), smallfont, const.BLACK)
+def draw_label(text, font, color, **position):
+    """
+    Draws a text over a small translucent dark panel, so it can be read over any background.
+    `position` is passed to get_rect(), e.g. center=(x, y) or midleft=(x, y).
+    """
+    text_image = font.render(text, True, color)
+    rect = text_image.get_rect(**position)
+    draw_panel(screen, rect.inflate(const.LABEL_PADDING * 2, const.LABEL_PADDING))
+    screen.blit(text_image, rect)
 
 
-def notify_round_change():
+def draw_hud():
+    """Player names on the sides (in their paddle color) and the score of the current game in the center."""
+    y = const.MARGIN + 12
+    pad = const.LABEL_PADDING
+    draw_label(const.PLAYER1_NAME, boldfont, const.PLAYER1_COLOR, midleft=(const.MARGIN + pad, y))
+    draw_label(const.PLAYER2_NAME, boldfont, const.PLAYER2_COLOR, midright=(width - const.MARGIN - pad, y))
+    draw_label("{0} : {1}".format(score1, score2), scorefont, const.HUD_TEXT_COLOR, center=(width / 2, y))
+
+
+def show_winner(winner_name):
+    """Shows who won the game and the final score, then returns so a new game can start."""
     # the field behind the overlay, redrawn every frame so the panel keeps its transparency
     background = screen.copy()
-    panel_rect = pygame.Rect(0, 0, 520, 250)
-    panel_rect.center = (width / 2, height / 2 + 15)
+    panel_rect = pygame.Rect(0, 0, 560, 220)
+    panel_rect.center = (width / 2, height / 2)
+    winner_font = get_font(48, bold=True)
 
+    start = pygame.time.get_ticks()
+    total = const.WINNER_DELAY * 1000
     while True:
         for event in pygame.event.get():
             if event.type == QUIT:
+                pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == K_SPACE:
-                    return
-        screen.blit(background, (0, 0))
-        draw_panel(screen, panel_rect)
 
-        disp_text(screen, "ROUND {0} COMPLETE".format(round_no), (width / 2, height / 2 - 70), roundfont,
-                  colors[2][1])
-        disp_text(screen, "{0}  :  {1}".format(score1, score2), (width / 2, height / 2 - 25), roundfont, const.WHITE)
-
-        mouse = pygame.mouse.get_pos()
-        click = pygame.mouse.get_pressed()
-
-        # continue
-        cont_rect = pygame.Rect(0, 0, 180, 44)
-        cont_rect.center = (width / 2, height / 2 + 50)
-        if button_rect(screen, cont_rect, colors[4][0], colors[4][1], "CONTINUE", smallfont, mouse) and click[0] == 1:
+        elapsed = pygame.time.get_ticks() - start
+        if elapsed >= total:
             return
 
-        disp_text(screen, "or press space to continue", (width / 2, height / 2 + 105), smallfont, const.WHITE)
+        screen.blit(background, (0, 0))
+        draw_panel(screen, panel_rect)
+        disp_text(screen, "{0} WINS".format(winner_name.upper()), (width / 2, height / 2 - 55), winner_font,
+                  colors[3][1])
+        disp_text(screen, "{0}  :  {1}".format(score1, score2), (width / 2, height / 2 + 5), scorefont,
+                  const.WHITE)
+        disp_text(screen, "next game in {0}".format(const.WINNER_DELAY - elapsed // 1000),
+                  (width / 2, height / 2 + 65), smallfont, const.WHITE)
 
         pygame.display.flip()
-        clock.tick(10)
+        clock.tick(const.FPS)
 
 
 # function to display pause screen
@@ -108,7 +113,7 @@ def show_pause_screen():
         screen.blit(background, (0, 0))
         draw_panel(screen, panel_rect)
 
-        disp_text(screen, "PAUSED", (width / 2, 200), roundfont, const.WHITE)
+        disp_text(screen, "PAUSED", (width / 2, 200), boldfont, const.WHITE)
         screen.blit(play_image, [width / 2 - 32, height - 70])
 
         mouse = pygame.mouse.get_pos()
@@ -163,18 +168,22 @@ def render_field(background_color):
         screen.blit(field_image, (0, 0))
     else:
         screen.fill(background_color)
-    # center circle
-    pygame.draw.circle(screen, const.WHITE, (width / 2, height / 2), 70, 5)
-    # borders
-    pygame.draw.rect(screen, const.WHITE, (0, 0, width, height), 5)
-    # D-box
-    pygame.draw.rect(screen, const.WHITE, (0, height / 2 - 150, 150, 300), 5)
-    pygame.draw.rect(screen, const.WHITE, (width - 150, height / 2 - 150, 150, 300), 5)
+
+    # field lines: a background image usually brings its own, so they are only drawn over it if asked
+    if field_image is None or const.FIELD_LINES_OVER_IMAGE:
+        # center circle
+        pygame.draw.circle(screen, const.WHITE, (width / 2, height / 2), 70, 5)
+        # borders
+        pygame.draw.rect(screen, const.WHITE, (0, 0, width, height), 5)
+        # D-box
+        pygame.draw.rect(screen, const.WHITE, (0, height / 2 - 150, 150, 300), 5)
+        pygame.draw.rect(screen, const.WHITE, (width - 150, height / 2 - 150, 150, 300), 5)
+        # Divider
+        pygame.draw.rect(screen, const.WHITE, (width / 2, 0, 3, height))
+
     # goals
     pygame.draw.rect(screen, const.BLACK, (0, const.GOAL_Y1, 5, const.GOAL_WIDTH))
     pygame.draw.rect(screen, const.BLACK, (width - 5, const.GOAL_Y1, 5, const.GOAL_WIDTH))
-    # Divider
-    pygame.draw.rect(screen, const.WHITE, (width / 2, 0, 3, height))
 
     # PAUSE
     screen.blit(pause_image, (width / 2 - 32, height - 70))
@@ -183,12 +192,11 @@ def render_field(background_color):
 def draw_game():
     """Draws the field, the scores, the paddles and the puck."""
     render_field(const.FIELD_COLOR)
-    score(score1, score2, const.PLAYER1_NAME, const.PLAYER2_NAME)
-    rounds(rounds_p1, rounds_p2, round_no)
+    draw_hud()
     draw_camera()
-    paddle1.draw(screen, const.PLAYER1_COLOR)
-    paddle2.draw(screen, const.PLAYER2_COLOR)
-    puck.draw(screen)
+    paddle1.draw(screen, const.PLAYER1_COLOR, paddle1_image)
+    paddle2.draw(screen, const.PLAYER2_COLOR, paddle2_image)
+    puck.draw(screen, puck_image)
 
 
 def draw_camera():
@@ -233,22 +241,15 @@ def countdown():
 
 
 def start_match():
-    """Resets scores and positions, shows the countdown and releases the puck from the center."""
-    global score1, score2, rounds_p1, rounds_p2, round_no
+    """Starts a new game at 0 : 0, shows the countdown and releases the puck from the center."""
+    global score1, score2
     score1, score2 = 0, 0
-    rounds_p1, rounds_p2, round_no = 0, 0, 1
 
     paddle1.reset()
     paddle2.reset()
     puck.kickoff(const.GAME_SPEED)  # puck stays still at the center until the countdown ends
 
     countdown()
-
-
-def resetround(player):
-    puck.round_reset(player)
-    paddle1.reset()
-    paddle2.reset()
 
 
 def reset_game(speed, player):
@@ -274,7 +275,7 @@ def field_y(y_norm):
 
 # Game Loop
 def game_loop():
-    global score1, score2, rounds_p1, rounds_p2, round_no
+    global score1, score2
     speed = const.GAME_SPEED
 
     pygame.mixer.music.load(os.path.join(auxDirectory, 'back.mp3'))  # background music
@@ -356,31 +357,13 @@ def game_loop():
             paddle.lock_x()
             paddle.check_vertical_bounds(height)
 
-        # Update round points
-        if score1 == const.SCORE_LIMIT:
-            if not rounds_p1 + 1 == const.ROUND_LIMIT:
-                notify_round_change()
-            round_no += 1
-            rounds_p1 += 1
-            score1, score2 = 0, 0
-            resetround(1)
+        draw_game()
 
-        if score2 == const.SCORE_LIMIT:
-            if not rounds_p2 + 1 == const.ROUND_LIMIT:
-                notify_round_change()
-            round_no += 1
-            rounds_p2 += 1
-            score1, score2 = 0, 0
-            resetround(2)
-
-        # display the end screen when a player wins, then start a new match
-        if rounds_p1 == const.ROUND_LIMIT or rounds_p2 == const.ROUND_LIMIT:
-            winner = const.PLAYER1_NAME if rounds_p1 == const.ROUND_LIMIT else const.PLAYER2_NAME
-            game_end(screen, clock, const.FIELD_COLOR, winner)
+        # the first player to reach SCORE_LIMIT goals wins, then a new game starts at 0 : 0
+        if score1 == const.SCORE_LIMIT or score2 == const.SCORE_LIMIT:
+            show_winner(const.PLAYER1_NAME if score1 == const.SCORE_LIMIT else const.PLAYER2_NAME)
             start_match()
             continue
-
-        draw_game()
 
         # refresh screen.
         pygame.display.flip()

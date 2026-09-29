@@ -95,15 +95,6 @@ class Puck:
         paddle.y += math.cos(temp_angle) * offset
         return True
 
-    def round_reset(self, player):
-        if player == 1:
-            self.x = 3*const.WIDTH/4
-        if player == 2:
-            self.x = const.WIDTH/4
-        self.y = const.HEIGHT/2
-        self.angle = 0
-        self.speed = 0
-
     def reset(self, speed, player):
         if player == 1:
             self.angle = rand.uniform(-math.pi, 0)
@@ -120,6 +111,11 @@ class Puck:
         self.x = const.WIDTH / 2
         self.y = const.HEIGHT / 2
 
-    def draw(self, screen):
-        pygame.draw.circle(screen, const.WHITE, (int(self.x), int(self.y)), self.radius)
+    def draw(self, screen, image=None):
+        """Draws the puck: the image (already round and sized) or a white circle."""
+        position = (int(self.x), int(self.y))
+        if image is not None:
+            screen.blit(image, image.get_rect(center=position))
+        else:
+            pygame.draw.circle(screen, const.WHITE, position, self.radius)
 

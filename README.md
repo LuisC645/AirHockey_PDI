@@ -15,7 +15,9 @@ Cambios respecto al original:
   disco sale desde el centro en línea recta hacia un lado al azar.
 - Siempre dos jugadores, con colores fijos (rojo y azul) y una sola velocidad.
 - Las paletas están fijas en X, cerca de su portería, y solo se mueven en Y.
-- Fuente JetBrains Mono, márgenes uniformes y paneles legibles en la pausa y entre rondas.
+- Sin rondas: gana el primero en llegar a 5 goles, se muestra el ganador y empieza otra partida
+  en 0 : 0. El marcador va en el centro y a los lados solo los nombres de los jugadores.
+- Fuente JetBrains Mono, márgenes uniformes y paneles legibles en la pausa y al terminar la partida.
 - Se quitaron el menú, la selección de colores y de tema, los nombres editables, la ayuda y el
   botón de silencio.
 - Control por cámara con guantes amarillos (`PDI/` + `bridge.py`) y una vista previa pequeña de la
@@ -62,6 +64,7 @@ python main.py
 | 1 | Roja, portería izquierda | Mitad izquierda de la cámara | W / S |
 | 2 | Azul, portería derecha | Mitad derecha de la cámara | ↑ / ↓ |
 
+- Gana el primero en llegar a **5 goles**; a los 3 segundos empieza otra partida en 0 : 0.
 - **Espacio** o el botón de pausa: pausar, continuar o reiniciar.
 - En las esquinas inferiores se ve la cámara de cada jugador, con su guante marcado y la franja
   útil de movimiento (líneas grises).
@@ -94,9 +97,9 @@ AirHockey/
 │   ├── prueba_camara.py   Herramienta de calibración
 │   └── calibracion.json   Calibración guardada (se crea al pulsar G)
 └── game/              Juego (pygame)
-    ├── air_hockey.py      Bucle del juego, cuenta regresiva, pausa y rondas
+    ├── air_hockey.py      Bucle del juego, marcador, cuenta regresiva, pausa y ganador
     ├── paddle.py, puck.py Paletas y disco
-    ├── endScreen.py, ui.py Pantalla del ganador y elementos de interfaz
+    ├── ui.py              Elementos de interfaz (textos, botones, paneles)
     ├── constants.py       Tamaños, colores, velocidades y reglas
     ├── globals.py         Recursos compartidos (imágenes, fuentes)
     └── assets/            Imágenes, sonidos y fuentes
@@ -112,4 +115,10 @@ AirHockey/
 | Tamaño de la vista previa de la cámara | `ESCALA_VISTA` en `bridge.py` |
 | Velocidad máxima de la paleta al seguir el guante | `CAMERA_PADDLE_SPEED` en `game/constants.py` |
 | Distancia de las paletas a su portería | `PADDLE_GOAL_DISTANCE` en `game/constants.py` |
-| Fondo del campo | Guardar una imagen como `game/assets/field.png` (1200 × 600) |
+| Goles para ganar y segundos que se muestra el ganador | `SCORE_LIMIT` y `WINNER_DELAY` en `game/constants.py` |
+| Fondo del campo | Guardar una imagen de 1200 × 600 como `game/assets/field.png` (o `.jpg`) |
+| Imagen de la paleta del jugador 1 / jugador 2 | `game/assets/paddle1.png` / `paddle2.png` (80 × 80, se recorta en círculo) |
+| Imagen del disco | `game/assets/puck.png` (60 × 60, se recorta en círculo) |
+| Aro de color alrededor de la imagen de cada paleta | `PADDLE_IMAGE_RING` en `game/constants.py` (0 = sin aro) |
+| Dibujar las líneas blancas del campo encima del fondo | `FIELD_LINES_OVER_IMAGE` en `game/constants.py` |
+| Color del marcador y tamaño de su panel oscuro | `HUD_TEXT_COLOR` y `LABEL_PADDING` en `game/constants.py` |
