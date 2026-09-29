@@ -1,5 +1,5 @@
 """
-Detección de guantes amarillos con procesamiento digital de imágenes clásico (sin IA).
+Detección de manos.
 
 Cada cuadro de la cámara pasa por esta cadena (pipeline):
 
